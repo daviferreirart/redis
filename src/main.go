@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/go-redis/redis"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -14,15 +16,28 @@ func main() {
 		DB:       0,
 	})
 
-	err := redisClient.Set("nome", "davi", 0).Err()
+	ctx := context.Background()
+
+	err := redisClient.Set(ctx, "name", "davi", 0).Err()
 	if err != nil {
 		fmt.Print(err)
 	}
 
-	value, err := redisClient.Get("nome").Result()
+	_, err = redisClient.Get(ctx, "name").Result()
 	if err != nil {
 		fmt.Print(err)
 	}
-	fmt.Println(value)
+
+	list := map[string]string{"nome": "john", "sobrenome": "wick", "cidade": "new york", "uuid": uuid.New().String()}
+
+	for k, v := range list {
+		err = redisClient.HSet(ctx, "values", k, v).Err()
+		if err != nil {
+			fmt.Print(err)
+		}
+	}
+	fmt.Println(redisClient.HGetAll(ctx, "values").Val())
+	redisClient.HDel(ctx, "values", "cidade", "uuid")
+	fmt.Println(redisClient.HGetAll(ctx, "values").Val())
 
 }
